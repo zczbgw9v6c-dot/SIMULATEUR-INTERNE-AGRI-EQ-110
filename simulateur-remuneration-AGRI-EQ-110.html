@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulateur AGRI-EQ-110 — prime CEE &amp; rémunération</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --field:#16261C; --field-2:#2E4636; --paper:#EFF1EC; --card:#FFFFFF;
+  --line:#D6DBD2; --amber:#A96A12; --pine:#245C3E; --muted:#657064;
+  --warn-bg:#FDF4E3; --warn-line:#E4C27E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Archivo',system-ui,sans-serif;background:var(--paper);color:var(--field);font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+.wrap{max-width:940px;margin:0 auto;padding:20px 16px 72px}
+header{border-bottom:2px solid var(--field);padding-bottom:14px;margin-bottom:18px}
+h1{font-size:25px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+header p{color:var(--muted);font-size:13.5px;margin-top:6px}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.panel h2{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.panel h2:not(:first-child){margin-top:18px}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{flex:1 1 auto;min-width:80px;text-align:center;padding:9px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;font:inherit;font-size:13.5px;font-weight:500;color:var(--field);cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.chip[aria-pressed="true"]{background:var(--field);border-color:var(--field);color:#fff}
+.chip[disabled]{opacity:.35;cursor:not-allowed}
+.chip:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+.zonerow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lock{font-size:12px;color:var(--pine);font-weight:600}
+
+.knobs{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:14px}
+.knob label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px}
+.knob input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;font:inherit;font-weight:600;font-variant-numeric:tabular-nums;color:var(--field);background:#fff}
+.knob input:focus-visible{outline:3px solid var(--amber);outline-offset:1px;border-color:var(--field)}
+
+.flag{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:8px;padding:11px 13px;font-size:13px;line-height:1.5;margin-top:14px}
+.flag b{font-weight:600}
+.flag.ok{background:#EDF4EF;border-color:#A9CBB6}
+
+.summary{background:var(--field);color:#fff;border-radius:10px;padding:18px;margin-bottom:16px}
+.summary .cfg{font-size:12.5px;color:#A9BCAE;line-height:1.5}
+.summary .big{font-size:33px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:8px 0 2px}
+.summary .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;border-top:1px solid #3A5244;padding-top:12px}
+.summary .grid div span{display:block;font-size:11px;color:#A9BCAE}
+.summary .grid div strong{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13.5px;min-width:600px}
+th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--field)}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:#F6F8F4}
+tr.custom{background:#FBF6EC}
+tr.custom td:first-child{font-weight:700}
+td.money{font-weight:600}
+td.mine{color:var(--amber);font-weight:700}
+td.app{color:var(--pine);font-weight:600}
+
+.notes{font-size:13px;color:var(--muted);line-height:1.6}
+.notes p{margin-bottom:9px}
+.notes p:last-child{margin-bottom:0}
+.notes b{color:var(--field);font-weight:600}
+@media (max-width:520px){h1{font-size:21px}.summary .big{font-size:28px}.summary .grid{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Prime CEE &amp; rémunération — AGRI-EQ-110</h1>
+  <p>Séchage solaire par insufflation, panneaux hybrides PVT GIM APVT-630W — 1 620 W thermiques et 2,73 m² par panneau. Métropole, DOM et Corse.</p>
+</header>
+
+<div class="panel">
+  <h2>Territoire</h2>
+  <div class="chips" id="terrChips"></div>
+
+  <h2>Secteur</h2>
+  <div class="chips" id="sectorChips">
+    <button class="chip" data-k="sector" data-v="agricole" aria-pressed="true">Agricole</button>
+    <button class="chip" data-k="sector" data-v="forestier" aria-pressed="false">Forestier</button>
+  </div>
+
+  <h2>Zone climatique</h2>
+  <div class="zonerow">
+    <div class="chips" id="zoneChips" style="flex:1">
+      <button class="chip" data-k="zone" data-v="H1" aria-pressed="true">H1</button>
+      <button class="chip" data-k="zone" data-v="H2" aria-pressed="false">H2</button>
+      <button class="chip" data-k="zone" data-v="H3" aria-pressed="false">H3</button>
+    </div>
+    <span class="lock" id="zoneLock"></span>
+  </div>
+
+  <h2>Type d'opération</h2>
+  <div class="chips" id="typeChips">
+    <button class="chip" data-k="type" data-v="complet" aria-pressed="true">Système complet neuf</button>
+    <button class="chip" data-k="type" data-v="toiture" aria-pressed="false">Toiture couplée à l'existant</button>
+  </div>
+
+  <div class="knobs">
+    <div class="knob"><label for="prix">Prix cumac (€/MWh)</label><input id="prix" type="number" step="0.1" value="7"></div>
+    <div class="knob"><label for="surf">Surface libre (m²)</label><input id="surf" type="number" step="10" value="1860"></div>
+    <div class="knob"><label for="marge">Marge sur la prime (%)</label><input id="marge" type="number" step="1" value="30"></div>
+    <div class="knob"><label for="part">Ma part de la marge (%)</label><input id="part" type="number" step="1" value="40"></div>
+    <div class="knob"><label for="app">Apporteur, sur ma part (%)</label><input id="app" type="number" step="1" value="10"></div>
+    <div class="knob"><label for="nb">Nombre de dossiers</label><input id="nb" type="number" step="1" min="1" value="1"></div>
+  </div>
+
+  <div class="flag" id="flag"></div>
+</div>
+
+<div class="summary">
+  <div class="cfg" id="cfg"></div>
+  <div class="big" id="bigPrime"></div>
+  <div class="grid">
+    <div><span>Marge</span><strong id="sMarge"></strong></div>
+    <div><span>Ma part</span><strong id="sMine"></strong></div>
+    <div><span>Apporteur</span><strong id="sApp"></strong></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Simulation par surface de bâtiment</h2>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Surface</th><th>Panneaux</th><th>kW th.</th><th>MWh cumac</th><th>Prime CEE</th><th>Marge</th><th>Ma part</th><th>Apporteur</th><th>Mon net</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel notes">
+  <p><b>Dimensionnement.</b> Surface équipée = 80 % du bâtiment. Panneaux = partie entière de (surface × 0,80) ÷ 2,73. Puissance thermique = panneaux × 1,62 kW. Volume CEE = puissance thermique × forfait de la fiche × coefficient territorial.</p>
+  <p><b>Bonification ZNI ×2.</b> Article 4 de l'arrêté du 29 décembre 2014 : les volumes de certificats délivrés pour les actions réalisées en zone non interconnectée sont multipliés par 2. Prolongée jusqu'au 31 décembre 2030 par le décret n° 2025-1048. C'est le lieu des travaux qui déclenche la bonification, pas l'adresse du siège. Cumulable dans la limite du double des CEE délivrés sans bonification — sans autre bonification sur ces dossiers, le ×2 s'applique pleinement.</p>
+  <p><b>Zone climatique en DOM.</b> La fiche ne connaît que H1, H2 et H3, qui sont des zones métropolitaines. Le zonage climatique national de référence range toutefois la Guadeloupe (971), la Martinique (972), la Guyane (973), La Réunion (974) et Mayotte (976) avec la Corse et les départements méditerranéens, c'est-à-dire en H3. C'est la zone retenue par défaut ici. La seule règle explicitement publiée par la DGEC sur le sujet vise Saint-Pierre-et-Miquelon, territoire froid, pour lequel la zone H1 s'applique — ce qui confirme la logique climatique du raisonnement sans trancher formellement le cas des DOM. Faire confirmer la zone par écrit par l'obligé ou le délégataire reste indispensable avant d'engager un chiffrage client.</p>
+      <p><b>Sur cette fiche, H3 est la zone la mieux dotée</b> — 55 700 kWh cumac/kW en agricole et 134 100 en forestier, contre 42 700 et 102 600 en H1. C'est l'inverse des fiches d'isolation : ici l'économie vient du soleil, donc plus il y a d'ensoleillement, plus l'énergie fossile substituée est importante.</p>
+      <p><b>Conformité produit.</b> 630 Wc + 1 620 W thermiques sur 2,74 m², soit environ 821 W/m² — largement au-dessus du seuil de 500 W/m² de la fiche. Certifications IEC 61215, IEC 61730, mesure thermique ISO 9806. Le justificatif à récupérer auprès de Greenlux est l'attestation de certification des panneaux.</p>
+  <p><b>Coquille du formulaire de visite.</b> Le document terrain écrit « (surface × 0,80) + 2,73 » alors que ses propres exemples appliquent une division par 2,73. C'est la division qui est retenue ici, et qui redonne bien 117 / 146 / 175 / 234 / 293 panneaux.</p>
+</div>
+
+</div>
+
+<script>
+const TAUX={
+  complet:{agricole:{H1:42700,H2:48500,H3:55700},forestier:{H1:102600,H2:116600,H3:134100}},
+  toiture:{agricole:{H1:12200,H2:13900,H3:17400},forestier:{H1:16900,H2:19300,H3:24100}}
+};
+const TERR={
+  metropole:{label:'Métropole',mult:1,reco:'H1',free:true,
+    msg:"<b>Métropole — pas de bonification.</b> Volume de certificats au barème de la fiche. Choisis la zone du département des travaux : H1 nord et est, H2 façade atlantique et centre, H3 les huit départements méditerranéens."},
+  guadeloupe:{label:'Guadeloupe',mult:2,reco:'H3'},
+  martinique:{label:'Martinique',mult:2,reco:'H3'},
+  guyane:{label:'Guyane',mult:2,reco:'H3'},
+  reunion:{label:'La Réunion',mult:2,reco:'H3'},
+  mayotte:{label:'Mayotte',mult:2,reco:'H3'},
+  corse:{label:'Corse',mult:2,reco:'H3',
+    msg:"<b>Corse — ZNI, volume ×2.</b> La Corse (dép. 20) relève de la zone H3 dans le zonage climatique national. Aucune ambiguïté à lever ici."}
+};
+const SURFACES=[400,500,600,800,1000,1500,2000];
+const state={terr:'metropole',sector:'agricole',zone:'H1',type:'complet'};
+
+const eur=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
+const num=(n,d=0)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n||0);
+const g=id=>parseFloat(document.getElementById(id).value)||0;
+
+// Build territory chips
+document.getElementById('terrChips').innerHTML=Object.entries(TERR).map(([k,v])=>
+  `<button class="chip" data-k="terr" data-v="${k}" aria-pressed="${k===state.terr}">${v.label}</button>`).join('');
+
+function knobs(){return{prix:g('prix'),marge:g('marge')/100,part:g('part')/100,app:g('app')/100,nb:Math.max(1,g('nb')||1)};}
+
+function line(surface,k){
+  const panneaux=Math.floor((surface*0.80)/2.73);
+  const kw=panneaux*1.62;
+  const mult=TERR[state.terr].mult;
+  const cumacMWh=kw*TAUX[state.type][state.sector][state.zone]/1000*mult;
+  const prime=cumacMWh*k.prix;
+  const marge=prime*k.marge, mine=marge*k.part, apporteur=mine*k.app;
+  return{surface,panneaux,kw,cumacMWh,prime,marge,mine,apporteur,net:mine-apporteur};
+}
+
+function syncZone(reset){
+  const t=TERR[state.terr];
+  if(reset) state.zone=t.reco;
+  document.querySelectorAll('#zoneChips .chip').forEach(b=>{
+    b.disabled=false;
+    b.setAttribute('aria-pressed',String(b.dataset.v===state.zone));
+  });
+  document.getElementById('zoneLock').textContent=
+    state.zone===t.reco?`Zone retenue en ${t.label}`:`⚠ Zone recommandée : ${t.reco}`;
+  document.getElementById('zoneLock').style.color=
+    state.zone===t.reco?'var(--pine)':'var(--amber)';
+}
+
+function render(){
+  const k=knobs(), t=TERR[state.terr];
+
+  const tb=document.getElementById('rows');
+  const custom=Math.round(g('surf'));
+  const list=SURFACES.map(s=>({s,c:false}));
+  if(custom>0&&!SURFACES.includes(custom)) list.push({s:custom,c:true});
+  list.sort((a,b)=>a.s-b.s);
+
+  tb.innerHTML=list.map(({s,c})=>{
+    const r=line(s,k);
+    return `<tr class="${c?'custom':''}">
+      <td>${num(r.surface)} m²</td><td>${r.panneaux}</td><td>${num(r.kw,1)}</td><td>${num(r.cumacMWh)}</td>
+      <td class="money">${eur(r.prime)}</td><td>${eur(r.marge)}</td>
+      <td class="mine">${eur(r.mine)}</td><td class="app">${eur(r.apporteur)}</td><td class="money">${eur(r.net)}</td>
+    </tr>`;
+  }).join('');
+
+  const ref=line(custom>0?custom:500,k);
+  const label=state.type==='complet'?'système complet neuf':'toiture couplée';
+  const dossiers=k.nb>1?` · ${k.nb} dossiers`:'';
+  document.getElementById('cfg').innerHTML=
+    `${t.label} · ${state.sector==='agricole'?'Agricole':'Forestier'} · ${state.zone} · ${label} · ${num(ref.surface)} m² · ${ref.panneaux} panneaux · ${num(ref.kw,1)} kW th${dossiers}`
+    +(t.mult>1?' · <b>volume ×2 (ZNI)</b>':'');
+  document.getElementById('bigPrime').textContent=eur(ref.prime*k.nb);
+  document.getElementById('sMarge').textContent=eur(ref.marge*k.nb);
+  document.getElementById('sMine').textContent=eur(ref.mine*k.nb);
+  document.getElementById('sApp').textContent=eur(ref.apporteur*k.nb);
+
+  const fl=document.getElementById('flag');
+  fl.className='flag'+(t.flag==='ok'?' ok':'');
+  fl.innerHTML=t.msg||`<b>${t.label} — ZNI, volume ×2.</b> Zone H3 retenue : le zonage climatique national range les cinq DOM avec les départements méditerranéens. C'est cohérent avec la fiche, où H3 est la zone la mieux dotée puisque plus d'ensoleillement veut dire plus d'énergie substituée. À faire tout de même confirmer par écrit par l'obligé avant de chiffrer au client.`;
+}
+
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('.chip');
+  if(!btn||btn.disabled)return;
+  state[btn.dataset.k]=btn.dataset.v;
+  btn.parentElement.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+  syncZone(btn.dataset.k==='terr'); render();
+});
+['prix','marge','part','app','nb','surf'].forEach(id=>document.getElementById(id).addEventListener('input',render));
+syncZone(true); render();
+</script>
+</body>
+</html>
